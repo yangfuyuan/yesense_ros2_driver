@@ -11,6 +11,8 @@ class ImuSerialNode : public rclcpp::Node {
   ~ImuSerialNode();
 
  private:
+  bool startSerialReceive();
+  void tryReconnect();
   void parseReceivedData(std::vector<uint8_t>& data, const size_t& length);
   void publishImu();
 
@@ -21,6 +23,8 @@ class ImuSerialNode : public rclcpp::Node {
   std::shared_ptr<drivers::common::IoContext> io_ctx_;
   std::shared_ptr<drivers::serial_driver::SerialPort> serial_port_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
+  rclcpp::TimerBase::SharedPtr reconnect_timer_;
+  bool has_logged_startup_ = true;
   ParseState state_;
   size_t data_len_;
   std::vector<uint8_t> input_buffer_;

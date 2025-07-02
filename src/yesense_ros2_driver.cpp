@@ -16,6 +16,19 @@ ImuSerialNode::ImuSerialNode()
       drivers::serial_driver::StopBits::ONE);
   serial_port_ = std::make_shared<drivers::serial_driver::SerialPort>(
       *io_ctx_, port_, config);
+  startSerialReceive();
+  reconnect_timer_ = this->create_wall_timer(
+      std::chrono::seconds(1), std::bind(&ImuSerialNode::tryReconnect, this));
+}
+
+ImuSerialNode::~ImuSerialNode() {
+  if (serial_port_->is_open()) {
+    serial_port_->close();
+  }
+  io_ctx_->waitForExit();
+}
+
+bool ImuSerialNode::startSerialReceive() {
   try {
     serial_port_->open();
     serial_port_->async_receive(
@@ -24,17 +37,31 @@ ImuSerialNode::ImuSerialNode()
         });
     RCLCPP_INFO(this->get_logger(),
                 "IMU serial node initialized and started reading");
+    has_logged_startup_ = true;
+    return true;
   } catch (const std::exception& e) {
     RCLCPP_ERROR(get_logger(), "Failed to open serial port[%s]: %s",
                  port_.c_str(), e.what());
   }
+  return false;
 }
 
-ImuSerialNode::~ImuSerialNode() {
-  if (serial_port_->is_open()) {
+void ImuSerialNode::tryReconnect() {
+  if (serial_port_ && serial_port_->is_open()) {
+    if (access(port_.c_str(), F_OK) == 0) {
+      return;
+    }
     serial_port_->close();
   }
-  io_ctx_->waitForExit();
+  if (access(port_.c_str(), F_OK) == 0) {
+    RCLCPP_INFO(this->get_logger(),
+                "Detected device [%s], trying to reconnect...", port_.c_str());
+    startSerialReceive();
+  } else {
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                         "Waiting for device [%s] to be available...",
+                         port_.c_str());
+  }
 }
 
 void ImuSerialNode::parseReceivedData(std::vector<uint8_t>& data,
@@ -87,8 +114,11 @@ void ImuSerialNode::parseReceivedData(std::vector<uint8_t>& data,
 }
 
 void ImuSerialNode::publishImu() {
-  RCLCPP_INFO_ONCE(this->get_logger(), "Publishing IMU data... frame_id: %s",
-                   frame_id_.c_str());
+  if (has_logged_startup_) {
+    has_logged_startup_ = false;
+    RCLCPP_INFO(this->get_logger(), "Publishing IMU data... frame_id: %s",
+                frame_id_.c_str());
+  }
   auto now = this->get_clock()->now();
   sensor_msgs::msg::Imu imu_msg;
   imu_msg.header.stamp = now;
