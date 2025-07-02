@@ -12,19 +12,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(serial_driver REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
-
-find_file(TF2_CPP_HEADERS
-  NAMES tf2_geometry_msgs.hpp
-  PATHS ${tf2_geometry_msgs_INCLUDE_DIRS}
-  NO_CACHE
-  PATH_SUFFIXES tf2_geometry_msgs
-)
-
-set(dependencies rclcpp sensor_msgs serial_driver std_msgs std_srvs tf2 tf2_geometry_msgs)
+set(dependencies rclcpp sensor_msgs serial_driver )
 
 ###########
 ## Build ##
@@ -33,12 +21,11 @@ set(dependencies rclcpp sensor_msgs serial_driver std_msgs std_srvs tf2 tf2_geom
 include_directories(
   include
   "${PROJECT_SOURCE_DIR}/include"
-  ./src
 )
 
 ## Declare a C++ executable
 add_executable(yesense_ros2_driver_node src/yesense_ros2_driver_node.cpp 
-src/analysis_data.c)
+src/analysis_data.c src/yesense_ros2_driver.cpp)
 
 ## Specify libraries to link a library or executable target against
 
