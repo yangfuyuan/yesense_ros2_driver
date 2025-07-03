@@ -1,3 +1,6 @@
+#ifndef YESENSE_ROS_DRIVER_HPP_
+#define YESENSE_ROS_DRIVER_HPP_
+
 #include <io_context/io_context.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -29,3 +32,4 @@ class ImuSerialNode : public rclcpp::Node {
   size_t data_len_;
   std::vector<uint8_t> input_buffer_;
 };
+#endif  // YESENSE_ROS_DRIVER_HPP_
